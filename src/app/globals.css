@@ -1,0 +1,4 @@
+.react-slider { height: 20px; margin: 20px 0; }
+.react-slider .track { top: 6px; height: 8px; background: #ddd; border-radius: 999px; }
+.react-slider .track-1 { background: #1f77b4; }
+.react-slider .thumb { height: 20px; width: 20px; background: white; border: 2px solid #1f77b4; border-radius: 50%; cursor: grab; }
