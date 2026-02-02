@@ -16,7 +16,7 @@ import dynamic from 'next/dynamic';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-const MapComponent = dynamic(() => import('../components/MapComponent'), { ssr: false });
+const MapComponent = dynamic(() => import("./components/MapComponent"), { ssr: false, loading: () => <p className="text-center py-10 text-gray-500">Loading map...</p> });
 
 export default function Home() {
   const sectors = [
