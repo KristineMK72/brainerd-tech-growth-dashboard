@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet map styles */
+@import "leaflet/dist/leaflet.css";
+
+/* Optional global tweaks */
+html,
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background-color: #f8fafc; /* soft neutral */
+}
