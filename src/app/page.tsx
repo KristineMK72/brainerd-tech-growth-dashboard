@@ -26,7 +26,7 @@ ChartJS.register(
 );
 
 // Dynamically load map (client-side only)
-const MapComponent = dynamic(() => import("../components/MapComponent"), {
+const MapComponent = dynamic(() => import("./components/MapComponent"), {
   ssr: false,
   loading: () => (
     <p className="text-center py-10 text-gray-500">Loading map...</p>
