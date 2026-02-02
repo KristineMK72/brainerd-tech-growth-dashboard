@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -20,10 +19,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 const MapComponent = dynamic(() => import('../components/MapComponent'), { ssr: false });
 
 export default function Home() {
-  const [growthFactor, setGrowthFactor] = useState(1.0);
-
-  const baseTechJobs = 822 + 395; // Professional + Information
-
   const sectors = [
     { name: 'Health Care & Social Assistance', income: 400, share: 19.9 },
     { name: 'Retail Trade', income: 191, share: 15.3 },
@@ -32,23 +27,15 @@ export default function Home() {
     { name: 'Accommodation & Food Services', income: 111, share: 13.8 },
     { name: 'Educational Services', income: 110, share: 7.5 },
     { name: 'Finance & Insurance', income: 106, share: 4.2 },
-    {
-      name: 'Professional, Scientific, & Technical (incl. tech/IT)',
-      income: Math.round(62 * growthFactor),
-      share: 2.6,
-    },
+    { name: 'Professional, Scientific, & Technical Services (incl. tech/IT)', income: 62, share: 2.6 },
     { name: 'Wholesale Trade', income: 51, share: 2.5 },
-    {
-      name: 'Information (incl. tech/telecom)',
-      income: Math.round(29 * growthFactor),
-      share: 1.3,
-    },
+    { name: 'Information (incl. tech/telecom)', income: 29, share: 1.3 },
   ];
 
   const barData = {
     labels: sectors.map(s => s.name),
     datasets: [{
-      label: 'Estimated Labor Income ($ Millions)',
+      label: 'Est. Labor Income ($ Millions)',
       data: sectors.map(s => s.income),
       backgroundColor: [
         '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
@@ -73,13 +60,13 @@ export default function Home() {
             Brainerd Lakes Tech Growth Dashboard
           </h1>
           <p className="text-lg md:text-xl text-gray-700">
-            Crow Wing County • 2025 • Pathways to More Technology Jobs
+            Crow Wing County • 2025 Estimates • Pathways to More Technology Jobs
           </p>
         </header>
 
         <section className="mb-16">
           <h2 className="text-3xl font-semibold mb-8 text-center text-gray-800">
-            Top Income-Driving Sectors
+            Top 10 Income-Driving Sectors
           </h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -97,34 +84,11 @@ export default function Home() {
               </div>
             </div>
           </div>
-
-          {/* Native HTML range slider */}
-          <div className="mt-12 max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md border border-gray-100">
-            <h3 className="text-xl font-medium mb-4 text-center">
-              Simulate Tech Sector Growth
-            </h3>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.1}
-              value={growthFactor}
-              onChange={(e) => setGrowthFactor(parseFloat(e.target.value))}
-              className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-            />
-            <div className="mt-4 text-center text-lg">
-              Growth factor: <strong>{growthFactor.toFixed(1)}×</strong>
-              <br />
-              Projected tech jobs ≈ <strong className="text-indigo-700">
-                {Math.round(baseTechJobs * growthFactor)}
-              </strong>
-            </div>
-          </div>
         </section>
 
         <section className="mb-16">
           <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">
-            Tech Activity in Brainerd Lakes
+            Tech Activity in the Brainerd Lakes Area
           </h2>
           <div className="h-[480px] bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
             <MapComponent />
@@ -139,17 +103,17 @@ export default function Home() {
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h3 className="text-xl font-medium mb-4">Short-term (0–18 months)</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-700">
-                <li>Start a Brainerd Lakes tech meetup or group</li>
+                <li>Start a local tech meetup or online group</li>
                 <li>Promote remote work + lakes lifestyle</li>
                 <li>Run IT workshops with Central Lakes College</li>
-                <li>Share this dashboard locally</li>
+                <li>Share this dashboard with community leaders</li>
               </ul>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h3 className="text-xl font-medium mb-4">Medium & long term</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-700">
                 <li>Develop co-working spaces with fast internet</li>
-                <li>Apply for MN DEED & federal rural tech grants</li>
+                <li>Apply for MN DEED rural tech grants</li>
                 <li>Attract small software firms with incentives</li>
                 <li>Build ties with existing tech employers</li>
               </ul>
