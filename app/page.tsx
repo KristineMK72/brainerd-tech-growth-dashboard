@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { Bar, Pie } from 'react-chartjs-2';
+import { Bar, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,46 +10,86 @@ import {
   Tooltip,
   Legend,
   ArcElement,
-} from 'chart.js';
-import 'leaflet/dist/leaflet.css';
-import dynamic from 'next/dynamic';
+} from "chart.js";
+import dynamic from "next/dynamic";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
-const MapComponent = dynamic(() => import("./components/MapComponent"), { ssr: false, loading: () => <p className="text-center py-10 text-gray-500">Loading map...</p> });
+const MapComponent = dynamic(() => import("./components/MapComponent"), {
+  ssr: false,
+  loading: () => (
+    <p className="text-center py-10 text-gray-500">Loading map...</p>
+  ),
+});
 
 export default function Home() {
   const sectors = [
-    { name: 'Health Care & Social Assistance', income: 400, share: 19.9 },
-    { name: 'Retail Trade', income: 191, share: 15.3 },
-    { name: 'Construction', income: 181, share: 7.6 },
-    { name: 'Manufacturing', income: 172, share: 9.5 },
-    { name: 'Accommodation & Food Services', income: 111, share: 13.8 },
-    { name: 'Educational Services', income: 110, share: 7.5 },
-    { name: 'Finance & Insurance', income: 106, share: 4.2 },
-    { name: 'Professional, Scientific, & Technical Services (incl. tech/IT)', income: 62, share: 2.6 },
-    { name: 'Wholesale Trade', income: 51, share: 2.5 },
-    { name: 'Information (incl. tech/telecom)', income: 29, share: 1.3 },
+    { name: "Health Care & Social Assistance", income: 400, share: 19.9 },
+    { name: "Retail Trade", income: 191, share: 15.3 },
+    { name: "Construction", income: 181, share: 7.6 },
+    { name: "Manufacturing", income: 172, share: 9.5 },
+    { name: "Accommodation & Food Services", income: 111, share: 13.8 },
+    { name: "Educational Services", income: 110, share: 7.5 },
+    { name: "Finance & Insurance", income: 106, share: 4.2 },
+    {
+      name: "Professional, Scientific, & Technical Services (incl. tech/IT)",
+      income: 62,
+      share: 2.6,
+    },
+    { name: "Wholesale Trade", income: 51, share: 2.5 },
+    { name: "Information (incl. tech/telecom)", income: 29, share: 1.3 },
+  ];
+
+  // ✅ Auto derive top 3 + tech share for the callout
+  const top3 = [...sectors]
+    .sort((a, b) => b.income - a.income)
+    .slice(0, 3)
+    .map((s) => s.name);
+
+  const techShare =
+    (sectors.find((s) => s.name.startsWith("Professional"))?.share ?? 0) +
+    (sectors.find((s) => s.name.startsWith("Information"))?.share ?? 0);
+
+  const colors = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
   ];
 
   const barData = {
-    labels: sectors.map(s => s.name),
-    datasets: [{
-      label: 'Est. Labor Income ($ Millions)',
-      data: sectors.map(s => s.income),
-      backgroundColor: [
-        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
-        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
-      ],
-    }],
+    labels: sectors.map((s) => s.name),
+    datasets: [
+      {
+        label: "Est. Labor Income ($ Millions)",
+        data: sectors.map((s) => s.income),
+        backgroundColor: colors,
+      },
+    ],
   };
 
   const pieData = {
-    labels: sectors.map(s => s.name),
-    datasets: [{
-      data: sectors.map(s => s.share),
-      backgroundColor: barData.datasets[0].backgroundColor,
-    }],
+    labels: sectors.map((s) => s.name),
+    datasets: [
+      {
+        data: sectors.map((s) => s.share),
+        backgroundColor: colors,
+      },
+    ],
   };
 
   return (
@@ -65,22 +105,56 @@ export default function Home() {
         </header>
 
         <section className="mb-16">
-          <h2 className="text-3xl font-semibold mb-8 text-center text-gray-800">
+          <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">
             Top 10 Income-Driving Sectors
           </h2>
 
+          {/* ✅ WHY THIS MATTERS CALLOUT */}
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 mb-8">
+            <h3 className="text-lg font-semibold text-indigo-900 mb-1">
+              Why this matters
+            </h3>
+            <p className="text-gray-700 leading-relaxed">
+              Brainerd’s biggest income-driving sectors include{" "}
+              <span className="font-medium">{top3.join(", ")}</span>. Expanding
+              tech jobs—especially IT roles inside non-tech employers—can diversify
+              the local economy, support higher wages, and strengthen year-round
+              stability.
+            </p>
+
+            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white border border-indigo-100 px-3 py-2">
+              <span className="text-sm text-gray-600">Tech-related share:</span>
+              <span className="text-sm font-semibold text-indigo-700">
+                {techShare.toFixed(1)}%
+              </span>
+              <span className="text-xs text-gray-500">
+                (Information + Professional/Technical)
+              </span>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-              <h3 className="text-xl font-medium mb-4 text-center">Labor Income ($M)</h3>
+              <h3 className="text-xl font-medium mb-4 text-center">
+                Labor Income ($M)
+              </h3>
               <div className="h-96">
-                <Bar data={barData} options={{ responsive: true, maintainAspectRatio: false }} />
+                <Bar
+                  data={barData}
+                  options={{ responsive: true, maintainAspectRatio: false }}
+                />
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-              <h3 className="text-xl font-medium mb-4 text-center">Employment Share (%)</h3>
+              <h3 className="text-xl font-medium mb-4 text-center">
+                Employment Share (%)
+              </h3>
               <div className="h-96">
-                <Pie data={pieData} options={{ responsive: true, maintainAspectRatio: false }} />
+                <Pie
+                  data={pieData}
+                  options={{ responsive: true, maintainAspectRatio: false }}
+                />
               </div>
             </div>
           </div>
@@ -110,7 +184,7 @@ export default function Home() {
               </ul>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-xl font-medium mb-4">Medium & long term</h3>
+              <h3 className="text-xl font-medium mb-4">Medium &amp; long term</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-700">
                 <li>Develop co-working spaces with fast internet</li>
                 <li>Apply for MN DEED rural tech grants</li>
