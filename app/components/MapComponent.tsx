@@ -1,218 +1,151 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, Circle, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 
-// Fix Leaflet marker icons for Next/Vercel
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x.src,
-  iconUrl: markerIcon.src,
-  shadowUrl: markerShadow.src,
+// Fix Leaflet marker icons for Next/Vercel
+import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
+import iconUrl from "leaflet/dist/images/marker-icon.png";
+import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+
+const DefaultIcon = L.icon({
+  iconRetinaUrl: iconRetinaUrl as unknown as string,
+  iconUrl: iconUrl as unknown as string,
+  shadowUrl: shadowUrl as unknown as string,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
 });
 
-type TechCategory = "IT services" | "Health tech" | "Education" | "Coworking";
-type MarkerKind = "activity" | "anchor";
+L.Marker.prototype.options.icon = DefaultIcon;
 
-type Location = {
-  position: [number, number];
+type Category = "it" | "healthtech" | "education" | "coworking";
+
+type LocationPoint = {
+  id: string;
   name: string;
-  category: TechCategory;
-  kind?: MarkerKind;
+  position: [number, number];
+  category: Category;
   note?: string;
 };
 
 const center: [number, number] = [46.358, -94.201];
 
-// Activity points (curated examples)
-const activityLocations: Location[] = [
+const points: LocationPoint[] = [
   {
+    id: "ascensus",
+    name: "Brainerd — IT / services",
     position: [46.358, -94.201],
-    name: "Brainerd – IT & business services",
-    category: "IT services",
-    kind: "activity",
-    note: "Example: managed IT, software services, back-office tech.",
+    category: "it",
+    note: "Example anchor. Replace/expand with vetted employers + addresses.",
   },
   {
-    position: [46.352, -94.188],
+    id: "clc",
     name: "Central Lakes College area",
-    category: "Education",
-    kind: "activity",
-    note: "Workforce pipeline + upskilling.",
-  },
-  {
-    position: [46.471, -94.289],
-    name: "Nisswa / Pequot Lakes area",
-    category: "Coworking",
-    kind: "activity",
-    note: "Remote work / small studio potential.",
-  },
-];
-
-// Workforce anchors (these make the map decision-grade)
-const anchors: Location[] = [
-  {
     position: [46.352, -94.188],
-    name: "Central Lakes College (anchor)",
-    category: "Education",
-    kind: "anchor",
-    note: "Training pipeline: IT / CIS / workforce programs.",
+    category: "education",
+    note: "Workforce anchor: training, programs, partnerships.",
   },
   {
-    position: [46.358, -94.201],
-    name: "City/County services (anchor)",
-    category: "IT services",
-    kind: "anchor",
-    note: "Municipal IT + public services tech roles.",
+    id: "pequot",
+    name: "Nisswa / Pequot Lakes area",
+    position: [46.471, -94.289],
+    category: "coworking",
+    note: "Example cluster area for remote workers + small firms.",
   },
-  // Add hospitals/major employers as you want:
-  // { position: [..,..], name: "Hospital (anchor)", category: "Health tech", kind: "anchor", note: "Healthcare IT roles." },
+  {
+    id: "health",
+    name: "Health / clinical tech hub (example)",
+    position: [46.3565, -94.197],
+    category: "healthtech",
+    note: "Example: hospital/clinic-adjacent IT + health operations.",
+  },
 ];
 
-const CATEGORY_COLORS: Record<TechCategory, string> = {
-  "IT services": "#2563eb",
-  "Health tech": "#16a34a",
-  Education: "#9333ea",
-  Coworking: "#f97316",
+const categoryStyle: Record<Category, { label: string; color: string }> = {
+  it: { label: "IT services", color: "#2563eb" },
+  healthtech: { label: "Health tech", color: "#16a34a" },
+  education: { label: "Education", color: "#7c3aed" },
+  coworking: { label: "Coworking", color: "#f97316" },
 };
 
-function iconFor(category: TechCategory, kind: MarkerKind = "activity") {
-  const fill = CATEGORY_COLORS[category];
-  const ring = kind === "anchor" ? "#111827" : "white"; // anchors get a darker ring
-  const size = kind === "anchor" ? 16 : 14;
-
+function iconForCategory(cat: Category) {
+  const { color } = categoryStyle[cat];
   return L.divIcon({
-    className: "tech-pin",
+    className: "",
     html: `<div style="
-      width: ${size}px; height: ${size}px; border-radius: 999px;
-      background: ${fill};
-      border: 2px solid ${ring};
-      box-shadow: 0 6px 14px rgba(0,0,0,.18);
+      width: 12px; height: 12px; border-radius: 9999px;
+      background:${color};
+      border: 2px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
     "></div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
   });
 }
 
-function Legend() {
-  return (
-    <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur rounded-xl border border-gray-200 shadow-md p-3">
-      <div className="text-xs font-semibold text-gray-800 mb-2">
-        Tech Activity Legend
-      </div>
-
-      <div className="space-y-1">
-        {(Object.keys(CATEGORY_COLORS) as TechCategory[]).map((cat) => (
-          <div key={cat} className="flex items-center gap-2 text-xs text-gray-700">
-            <span
-              style={{ background: CATEGORY_COLORS[cat] }}
-              className="inline-block w-3 h-3 rounded-full border border-white shadow"
-            />
-            <span>{cat}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2 pt-2 border-t border-gray-200 text-[11px] text-gray-600">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-3 h-3 rounded-full bg-gray-900 border border-white shadow" />
-          <span>Workforce anchors (pipeline)</span>
-        </div>
-      </div>
-
-      <div className="mt-2 text-[11px] text-gray-500">
-        Hover for labels • Click for details
-      </div>
-    </div>
-  );
-}
-
 export default function MapComponent() {
-  // Commute context (visual guidance, not official data)
-  const commuteRadiusMeters = 30000; // ~30km
-  const commuteLines: [number, number][][] = [
-    [center, [46.813, -92.104]], // example toward Duluth
-    [center, [45.000, -93.265]], // example toward Twin Cities
-  ];
-
   return (
     <div className="relative h-full w-full">
-      <MapContainer
-        center={center}
-        zoom={11}
-        style={{ height: "100%", width: "100%" }}
-        scrollWheelZoom={false}
-      >
+      <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }}>
         <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
-        {/* Commute context overlay */}
-        <Circle
-          center={center}
-          radius={commuteRadiusMeters}
-          pathOptions={{ color: "#334155", weight: 1, fillColor: "#94a3b8", fillOpacity: 0.08 }}
-        />
-        {commuteLines.map((line, i) => (
-          <Polyline
-            key={i}
-            positions={line}
-            pathOptions={{ color: "#334155", weight: 2, opacity: 0.6, dashArray: "6 8" }}
-          />
-        ))}
-
-        {/* Activity points (clustered) */}
-        <MarkerClusterGroup chunkedLoading showCoverageOnHover={false} spiderfyOnMaxZoom>
-          {activityLocations.map((loc, i) => (
-            <Marker
-              key={`act-${i}`}
-              position={loc.position}
-              icon={iconFor(loc.category, "activity")}
-            >
-              <Tooltip direction="top" offset={[0, -10]} opacity={1} sticky>
-                <div className="text-xs font-medium">{loc.name}</div>
-                <div className="text-[11px] text-gray-600">{loc.category}</div>
+        {/* Clustering */}
+        <MarkerClusterGroup chunkedLoading>
+          {points.map((p) => (
+            <Marker key={p.id} position={p.position} icon={iconForCategory(p.category)}>
+              {/* Hover label */}
+              <Tooltip direction="top" offset={[0, -6]} opacity={1} sticky>
+                <div className="text-sm font-medium">{p.name}</div>
+                <div className="text-xs text-gray-600">{categoryStyle[p.category].label}</div>
               </Tooltip>
 
+              {/* Click detail */}
               <Popup>
-                <div className="space-y-1">
-                  <div className="font-semibold">{loc.name}</div>
-                  <div className="text-sm text-gray-700">{loc.category}</div>
-                  {loc.note && <div className="text-sm text-gray-600">{loc.note}</div>}
+                <div style={{ minWidth: 220 }}>
+                  <div style={{ fontWeight: 800, marginBottom: 4 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: "#475569", marginBottom: 8 }}>
+                    Category: <span style={{ fontWeight: 700 }}>{categoryStyle[p.category].label}</span>
+                  </div>
+                  {p.note ? (
+                    <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.4 }}>{p.note}</div>
+                  ) : null}
                 </div>
               </Popup>
             </Marker>
           ))}
         </MarkerClusterGroup>
-
-        {/* Workforce anchors (not clustered, intentional) */}
-        {anchors.map((loc, i) => (
-          <Marker
-            key={`anc-${i}`}
-            position={loc.position}
-            icon={iconFor(loc.category, "anchor")}
-          >
-            <Tooltip direction="top" offset={[0, -10]} opacity={1} sticky>
-              <div className="text-xs font-semibold">{loc.name}</div>
-              <div className="text-[11px] text-gray-600">Workforce anchor</div>
-            </Tooltip>
-            <Popup>
-              <div className="space-y-1">
-                <div className="font-semibold">{loc.name}</div>
-                <div className="text-sm text-gray-700">{loc.category}</div>
-                {loc.note && <div className="text-sm text-gray-600">{loc.note}</div>}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
       </MapContainer>
 
-      <Legend />
+      {/* Mini legend */}
+      <div className="absolute left-4 bottom-4 bg-white/95 backdrop-blur rounded-xl shadow-lg border border-gray-200 p-4 w-[220px]">
+        <div className="font-semibold text-gray-800 mb-2">Tech Activity Legend</div>
+        <div className="space-y-2">
+          {(Object.keys(categoryStyle) as Category[]).map((k) => (
+            <div key={k} className="flex items-center gap-2 text-sm text-gray-700">
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 9999,
+                  background: categoryStyle[k].color,
+                  border: "2px solid white",
+                  boxShadow: "0 1px 6px rgba(0,0,0,.2)",
+                }}
+              />
+              <span>{categoryStyle[k].label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 text-xs text-gray-500">Hover for quick labels • Click for details</div>
+      </div>
     </div>
   );
 }
