@@ -413,10 +413,14 @@ export default function Home() {
         </section>
 
         {/* Your disclaimer component */}
-        <DataDisclaimer className="mt-10" />
+       <div className="mt-10">
+  <DataDisclaimer />
+</div>
 
-        {/* ✅ Sources & Methodology component */}
-        <SourcesMethodology className="mt-14" dataset={dataset} wageMode={wageMode} />
+<div className="mt-14">
+  <SourcesMethodology dataset={dataset} wageMode={wageMode} />
+</div>
+
       </div>
     </div>
   );
