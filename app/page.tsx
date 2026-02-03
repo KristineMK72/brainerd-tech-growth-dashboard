@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { Bar, Pie } from "react-chartjs-2";
+
 import SourcesMethodology from "./components/SourcesMethodology";
 import DataDisclaimer from "./components/DataDisclaimer";
 
@@ -27,7 +28,7 @@ const MapComponent = dynamic(() => import("./components/MapComponent"), {
   loading: () => <p className="text-center py-10 text-gray-500">Loading map...</p>,
 });
 
-// --- Sector rollup (your existing “income-driving sectors” section) ---
+/** --- Sector rollup (income-driving sectors section) --- */
 type Sector = { name: string; income: number; share: number };
 
 const SECTORS: Sector[] = [
@@ -55,6 +56,7 @@ const SECTOR_COLORS = [
   "#17becf",
 ];
 
+/** ---- Chart options ---- */
 const pieOptions: ChartOptions<"pie"> = {
   responsive: true,
   maintainAspectRatio: false,
@@ -70,17 +72,18 @@ const wageBarOptions: ChartOptions<"bar"> = {
       callbacks: {
         label: (ctx) => {
           const v = Number(ctx.raw ?? 0);
-          return ` ${v.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 })}/yr`;
+          return ` ${v.toLocaleString(undefined, {
+            style: "currency",
+            currency: "USD",
+            maximumFractionDigits: 0,
+          })}/yr`;
         },
       },
     },
   },
   scales: {
     x: { ticks: { maxRotation: 45, minRotation: 15, autoSkip: true } },
-    y: {
-      beginAtZero: true,
-      ticks: { callback: (v) => `$${Number(v).toLocaleString()}` },
-    },
+    y: { beginAtZero: true, ticks: { callback: (v) => `$${Number(v).toLocaleString()}` } },
   },
 };
 
@@ -92,16 +95,25 @@ const commuteBarOptions: ChartOptions<"bar"> = {
 };
 
 function money(n: number) {
-  return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  return n.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
 }
 
 export default function Home() {
+  /** ---- Controls state ---- */
   const [geoKey, setGeoKey] = useState<GeographyKey>("crow_wing_county");
   const [wageMode, setWageMode] = useState<WageMode>("median");
 
-  const dataset = useMemo(() => DATASETS.find((d) => d.key === geoKey)!, [geoKey]);
+  const dataset = useMemo(() => {
+    const d = DATASETS.find((x) => x.key === geoKey);
+    if (!d) throw new Error(`Dataset not found for key: ${geoKey}`);
+    return d;
+  }, [geoKey]);
 
-  // Sector callout helpers
+  /** ---- Callout helpers ---- */
   const top3 = useMemo(
     () => [...SECTORS].sort((a, b) => b.income - a.income).slice(0, 3).map((s) => s.name),
     []
@@ -113,7 +125,7 @@ export default function Home() {
     return p + i;
   }, []);
 
-  // Sector charts
+  /** ---- Sector charts ---- */
   const sectorBarData = useMemo(
     () => ({
       labels: SECTORS.map((s) => s.name),
@@ -144,30 +156,27 @@ export default function Home() {
     []
   );
 
-  // Wage chart (median/mean toggle)
-  const wageChart = useMemo(() => {
+  /** ---- Wage chart (median/mean toggle) ---- */
+  const wageChartData = useMemo(() => {
     const labels = dataset.wageRows.map((r) => r.group);
     const values = dataset.wageRows.map((r) => (wageMode === "median" ? r.median : r.mean));
     const colors = dataset.wageRows.map((r) => (r.tech ? "#2563eb" : "#64748b"));
 
     return {
       labels,
-      data: {
-        labels,
-        datasets: [
-          {
-            label: wageMode === "median" ? "Median annual wage" : "Mean annual wage",
-            data: values,
-            backgroundColor: colors,
-            borderRadius: 10,
-          },
-        ],
-      },
+      datasets: [
+        {
+          label: wageMode === "median" ? "Median annual wage" : "Mean annual wage",
+          data: values,
+          backgroundColor: colors,
+          borderRadius: 10,
+        },
+      ],
     };
   }, [dataset, wageMode]);
 
-  // Commuting chart
-  const commuteData = useMemo(() => {
+  /** ---- Commuting chart ---- */
+  const commuteChartData = useMemo(() => {
     const c = dataset.commute;
     return {
       labels: ["Local tech workers", "Tech commuters out", "Remote out-of-area (est.)"],
@@ -182,20 +191,19 @@ export default function Home() {
     };
   }, [dataset]);
 
-  // Cost calculator (transparent assumptions)
+  /** ---- Cost calculator (transparent assumptions) ---- */
   const commuters = dataset.commute.techCommutersOut;
   const rtMiles = dataset.commute.avgRoundTripMiles;
   const rtMinutes = dataset.commute.avgRoundTripMinutes;
 
   // IRS 2026 standard mileage rate (business): 72.5¢/mile
   const mileageRate = 0.725;
-
   const tripsPerYear = 230; // typical workdays
+
   const annualMiles = commuters * rtMiles * tripsPerYear;
   const annualMileageCost = annualMiles * mileageRate;
 
-  // time value: keep as simple assumption (you can switch to local wage later)
-  const valueOfTimePerHour = 25;
+  const valueOfTimePerHour = 25; // simple assumption (editable)
   const annualHours = commuters * (rtMinutes / 60) * tripsPerYear;
   const annualTimeCost = annualHours * valueOfTimePerHour;
 
@@ -317,17 +325,13 @@ export default function Home() {
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 mb-4">
               <div>
                 <h3 className="text-xl font-medium">Wages (tech highlighted)</h3>
-                <p className="text-sm text-gray-600">
-                  Blue = tech-related groups • Gray = other groups
-                </p>
+                <p className="text-sm text-gray-600">Blue = tech-related groups • Gray = other groups</p>
               </div>
-              <div className="text-xs text-gray-500">
-                OEWS reference period: May 2024 (released April 2025).
-              </div>
+              <div className="text-xs text-gray-500">Reference: BLS OEWS (annual).</div>
             </div>
 
             <div className="h-[420px]">
-              <Bar data={wageChart.data} options={wageBarOptions} />
+              <Bar data={wageChartData} options={wageBarOptions} />
             </div>
           </div>
         </section>
@@ -352,22 +356,20 @@ export default function Home() {
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
               <h3 className="text-xl font-medium mb-2">Tech commuters vs local tech workers</h3>
               <p className="text-sm text-gray-600 mb-4">
-                This visual summarizes: residents working locally vs commuting out vs remote out-of-area.
+                Residents working locally vs commuting out vs remote out-of-area.
               </p>
 
               <div className="h-[320px]">
-                <Bar data={commuteData} options={commuteBarOptions} />
+                <Bar data={commuteChartData} options={commuteBarOptions} />
               </div>
 
               <div className="text-xs text-gray-500 mt-3">
-                Commuting source options: ACS County-to-County Commuting Flows (ACS 5-year) or LEHD LODES / OnTheMap flows.
+                Commuting sources: ACS County-to-County Commuting Flows (ACS 5-year) or LEHD LODES / OnTheMap flows.
               </div>
             </div>
 
             <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-indigo-900 mb-2">
-                Estimated annual cost to residents
-              </h3>
+              <h3 className="text-xl font-semibold text-indigo-900 mb-2">Estimated annual cost to residents</h3>
 
               <p className="text-gray-700 text-sm leading-relaxed">
                 Assumptions for <span className="font-medium">{dataset.commute.label}</span>:{" "}
@@ -394,7 +396,7 @@ export default function Home() {
                   <div className="text-xs text-gray-500">Childcare / scheduling add-on</div>
                   <div className="text-lg font-semibold text-indigo-800">{money(annualChildcareCost)}</div>
                   <div className="text-xs text-gray-500">
-                    Currently set to ${childcarePerDay}/day (set > 0 to model “time poverty”).
+                    Currently set to ${childcarePerDay}/day (set {" > "} 0 to model “time poverty”).
                   </div>
                 </div>
 
@@ -402,7 +404,7 @@ export default function Home() {
                   <div className="text-xs text-gray-500">Total estimated annual burden</div>
                   <div className="text-2xl font-bold text-indigo-900">{money(annualTotalCost)}</div>
                   <div className="text-xs text-gray-500">
-                    This is a planning estimate; update commute counts + assumptions as you refine the geography.
+                    Planning estimate; update counts + assumptions as you refine commuting data.
                   </div>
                 </div>
               </div>
@@ -410,15 +412,11 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Optional: your existing disclaimer component */}
+        {/* Your disclaimer component */}
         <DataDisclaimer className="mt-10" />
 
         {/* ✅ Sources & Methodology component */}
         <SourcesMethodology className="mt-14" dataset={dataset} wageMode={wageMode} />
-
-        <div className="mt-8 text-center text-xs text-gray-500">
-          Mileage rate reference: IRS 2026 standard mileage rate (72.5¢/mile). :contentReference[oaicite:1]{index=1}
-        </div>
       </div>
     </div>
   );
