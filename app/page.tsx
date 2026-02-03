@@ -413,7 +413,7 @@ export default function Home() {
         </section>
 
         {/* Your disclaimer component */}
-       <div className="mt-10">
+       <div className="mt-14">
   <DataDisclaimer />
 </div>
 
